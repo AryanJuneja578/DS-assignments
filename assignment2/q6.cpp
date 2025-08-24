@@ -1,168 +1,136 @@
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
-struct SparseMatrix {
-    int rows, cols, terms;
-    int data[100][3]; // triplet representation
+struct Element {
+    int row, col, val;
 };
 
-// Function to read sparse matrix
-void readSparse(SparseMatrix &s) {
-    cout << "Enter rows, cols, non-zero terms: ";
-    cin >> s.rows >> s.cols >> s.terms;
+struct SparseMatrix {
+    int rows, cols;
+    vector<Element> data;
 
-    cout << "Enter row, col, value for each non-zero element:\n";
-    for (int i = 0; i < s.terms; i++) {
-        cin >> s.data[i][0] >> s.data[i][1] >> s.data[i][2];
+    // Function to add a non-zero element
+    void addElement(int r, int c, int v) {
+        if (v != 0) data.push_back({r, c, v});
     }
-}
 
-// Function to print sparse matrix
-void printSparse(const SparseMatrix &s) {
-    cout << "Row Col Val\n";
-    for (int i = 0; i < s.terms; i++) {
-        cout << s.data[i][0] << "   "
-             << s.data[i][1] << "   "
-             << s.data[i][2] << "\n";
-    }
-}
-
-// (a) Transpose of Sparse Matrix
-SparseMatrix transpose(const SparseMatrix &s) {
-    SparseMatrix t;
-    t.rows = s.cols;
-    t.cols = s.rows;
-    t.terms = s.terms;
-
-    int k = 0;
-    for (int c = 0; c < s.cols; c++) {
-        for (int i = 0; i < s.terms; i++) {
-            if (s.data[i][1] == c) {
-                t.data[k][0] = s.data[i][1];
-                t.data[k][1] = s.data[i][0];
-                t.data[k][2] = s.data[i][2];
-                k++;
-            }
+    // Display the triplet form
+    void display() {
+        cout << "Row Col Val\n";
+        for (auto &e : data) {
+            cout << e.row << "   " << e.col << "   " << e.val << "\n";
         }
     }
-    return t;
+};
+
+// (a) Transpose
+SparseMatrix transpose(SparseMatrix &A) {
+    SparseMatrix res;
+    res.rows = A.cols;
+    res.cols = A.rows;
+    for (auto &e : A.data) {
+        res.addElement(e.col, e.row, e.val);
+    }
+    return res;
 }
 
 // (b) Addition of two sparse matrices
-SparseMatrix add(const SparseMatrix &a, const SparseMatrix &b) {
-    SparseMatrix sum;
-    if (a.rows != b.rows || a.cols != b.cols) {
-        cout << "Addition not possible!\n";
-        sum.terms = 0;
-        return sum;
+SparseMatrix add(SparseMatrix &A, SparseMatrix &B) {
+    if (A.rows != B.rows || A.cols != B.cols) {
+        throw invalid_argument("Matrix dimensions do not match for addition");
     }
-    sum.rows = a.rows;
-    sum.cols = a.cols;
-    int i = 0, j = 0, k = 0;
+    SparseMatrix res;
+    res.rows = A.rows;
+    res.cols = A.cols;
 
-    while (i < a.terms && j < b.terms) {
-        if (a.data[i][0] < b.data[j][0] ||
-           (a.data[i][0] == b.data[j][0] && a.data[i][1] < b.data[j][1])) {
-            sum.data[k][0] = a.data[i][0];
-            sum.data[k][1] = a.data[i][1];
-            sum.data[k][2] = a.data[i][2];
-            i++; k++;
-        }
-        else if (b.data[j][0] < a.data[i][0] ||
-                (b.data[j][0] == a.data[i][0] && b.data[j][1] < a.data[i][1])) {
-            sum.data[k][0] = b.data[j][0];
-            sum.data[k][1] = b.data[j][1];
-            sum.data[k][2] = b.data[j][2];
-            j++; k++;
-        }
-        else {
-            int value = a.data[i][2] + b.data[j][2];
-            if (value != 0) {
-                sum.data[k][0] = a.data[i][0];
-                sum.data[k][1] = a.data[i][1];
-                sum.data[k][2] = value;
-                k++;
-            }
-            i++; j++;
+    int i = 0, j = 0;
+    while (i < A.data.size() && j < B.data.size()) {
+        if (A.data[i].row < B.data[j].row ||
+           (A.data[i].row == B.data[j].row && A.data[i].col < B.data[j].col)) {
+            res.addElement(A.data[i].row, A.data[i].col, A.data[i].val);
+            i++;
+        } else if (B.data[j].row < A.data[i].row ||
+                  (B.data[j].row == A.data[i].row && B.data[j].col < A.data[i].col)) {
+            res.addElement(B.data[j].row, B.data[j].col, B.data[j].val);
+            j++;
+        } else {
+            int sum = A.data[i].val + B.data[j].val;
+            if (sum != 0) res.addElement(A.data[i].row, A.data[i].col, sum);
+            i++, j++;
         }
     }
-    while (i < a.terms) {
-        sum.data[k][0] = a.data[i][0];
-        sum.data[k][1] = a.data[i][1];
-        sum.data[k][2] = a.data[i][2];
-        i++; k++;
-    }
-    while (j < b.terms) {
-        sum.data[k][0] = b.data[j][0];
-        sum.data[k][1] = b.data[j][1];
-        sum.data[k][2] = b.data[j][2];
-        j++; k++;
-    }
-    sum.terms = k;
-    return sum;
+    while (i < A.data.size()) res.addElement(A.data[i].row, A.data[i].col, A.data[i++].val);
+    while (j < B.data.size()) res.addElement(B.data[j].row, B.data[j].col, B.data[j++].val);
+    return res;
 }
 
-// (c) Multiplication of two sparse matrices
-SparseMatrix multiply(const SparseMatrix &a, const SparseMatrix &b) {
-    SparseMatrix prod;
-    if (a.cols != b.rows) {
-        cout << "Multiplication not possible!\n";
-        prod.terms = 0;
-        return prod;
+// (c) Multiplication
+SparseMatrix multiply(SparseMatrix &A, SparseMatrix &B) {
+    if (A.cols != B.rows) {
+        throw invalid_argument("Matrix dimensions do not match for multiplication");
+    }
+    SparseMatrix res;
+    res.rows = A.rows;
+    res.cols = B.cols;
+
+    // Convert B to map for fast access
+    map<pair<int,int>, int> Bmap;
+    for (auto &e : B.data) {
+        Bmap[{e.row, e.col}] = e.val;
     }
 
-    prod.rows = a.rows;
-    prod.cols = b.cols;
-    prod.terms = 0;
-
-    for (int i = 0; i < a.terms; i++) {
-        for (int j = 0; j < b.terms; j++) {
-            if (a.data[i][1] == b.data[j][0]) {
-                int r = a.data[i][0];
-                int c = b.data[j][1];
-                int val = a.data[i][2] * b.data[j][2];
-                int k;
-                for (k = 0; k < prod.terms; k++) {
-                    if (prod.data[k][0] == r && prod.data[k][1] == c) {
-                        prod.data[k][2] += val;
-                        break;
-                    }
-                }
-                if (k == prod.terms) {
-                    prod.data[prod.terms][0] = r;
-                    prod.data[prod.terms][1] = c;
-                    prod.data[prod.terms][2] = val;
-                    prod.terms++;
-                }
+    // Multiply
+    for (auto &a : A.data) {
+        for (int j = 0; j < B.cols; j++) {
+            auto it = Bmap.find({a.col, j});
+            if (it != Bmap.end()) {
+                res.addElement(a.row, j, a.val * it->second);
             }
         }
     }
-    return prod;
+
+    // Combine duplicate positions
+    map<pair<int,int>, int> combine;
+    for (auto &e : res.data) {
+        combine[{e.row, e.col}] += e.val;
+    }
+    res.data.clear();
+    for (auto &p : combine) {
+        if (p.second != 0) res.addElement(p.first.first, p.first.second, p.second);
+    }
+    return res;
 }
 
+// ================== MAIN ==================
 int main() {
     SparseMatrix A, B;
+    A.rows = 3; A.cols = 3;
+    B.rows = 3; B.cols = 3;
 
-    cout << "Enter Sparse Matrix A:\n";
-    readSparse(A);
+    // Matrix A
+    A.addElement(0, 0, 1);
+    A.addElement(0, 2, 2);
+    A.addElement(1, 1, 3);
 
-    cout << "Enter Sparse Matrix B:\n";
-    readSparse(B);
+    // Matrix B
+    B.addElement(0, 1, 4);
+    B.addElement(1, 1, 5);
+    B.addElement(2, 2, 6);
 
-    cout << "\nMatrix A:\n";
-    printSparse(A);
+    cout << "Matrix A in triplet form:\n"; A.display();
+    cout << "\nMatrix B in triplet form:\n"; B.display();
 
-    cout << "\nMatrix B:\n";
-    printSparse(B);
+    // Transpose
+    SparseMatrix T = transpose(A);
+    cout << "\nTranspose of A:\n"; T.display();
 
-    cout << "\nTranspose of A:\n";
-    printSparse(transpose(A));
-  
-    cout << "\nA + B:\n";
-    printSparse(add(A, B));
+    // Addition
+    SparseMatrix Sum = add(A, B);
+    cout << "\nA + B:\n"; Sum.display();
 
-    cout << "\nA * B:\n";
-    printSparse(multiply(A, B));
+    // Multiplication
+    SparseMatrix Prod = multiply(A, B);
+    cout <<"\nA * B:\n"; Prod.display();
 
     return 0;
 }
