@@ -10,10 +10,11 @@ void displayCircularList(Node* head) {
     
     do {
         cout << current->data;
+
         if (current->next != head) {
             cout << " -> ";
         }
         current = current->next;
     } while (current != head);
-    cout << " -> (" << head->data << " - Head Repeated)" << endl;
+    cout << " -> " << head->data <<  endl;
 }
